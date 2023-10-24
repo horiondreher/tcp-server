@@ -5,7 +5,7 @@
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost COMPONENTS system) # system is the only component needed for tcp server
+find_package(Boost COMPONENTS system thread chrono) # system is the only component needed for tcp server
 
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
