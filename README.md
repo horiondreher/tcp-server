@@ -34,6 +34,12 @@ To run the server:
 build/bin/tcp_server
 ```
 
+To run the client:
+
+```sh
+build/bin/tcp_client <server address> <port>
+```
+
 ## How to run on docker
 
 To use the docker container, first you'll have to build the image:
@@ -46,4 +52,10 @@ Then you can run with `docker compose` command:
 
 ```sh
 docker compose up
+```
+
+To run the client you can use:
+
+```sh
+docker exec -it <container_name> tcp_client <host> <port>
 ```

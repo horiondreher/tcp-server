@@ -105,6 +105,7 @@ public:
         std::string prefix = config::get_instance().file_name_prefix;
         file_name_ = prefix + "_" + client_endpoint_ + "_" + timestamp + ".txt";
 
+        // read until \n\n
         async_read_until(
             socket_,
             buffer_,
@@ -115,6 +116,7 @@ public:
                         placeholders::bytes_transferred));
     }
 
+    // probably is better to use bytes_transferred for something here
     void handle_read(const boost::system::error_code& err, size_t bytes_transferred) {
         if (!err) {
             std::istream input_stream(&buffer_);
@@ -127,6 +129,7 @@ public:
 
             std::cout << "Bytes received from " << client_endpoint_ << ": " << bytes_transferred << std::endl;
             size_t file_length = 0;
+            size_t subtract = 0;
             size_t max_file_size = config::get_instance().max_file_size;
 
             while(input_stream) {
@@ -135,9 +138,12 @@ public:
 
                 if(file_length + read > max_file_size) {
                     read = max_file_size - file_length;
+                } else if(boost::regex_search(data_, data_ + read, boost::regex("\n\n"))) {
+                    subtract = 2;
                 }
 
-                output_file.write(data_, read);
+                // not the best way to end a stream
+                output_file.write(data_, read - subtract);
                 file_length += read;
 
                 if(file_length >= max_file_size) {
@@ -197,7 +203,7 @@ public:
  * socket creates using the acceptor object
 */
 int main() {
-    std::cout << "Read config file" << std::endl;
+    std::cout << "Reading config file" << std::endl;
 
     config& config = config::get_instance();
     if(!config.load_config(config_file)) {

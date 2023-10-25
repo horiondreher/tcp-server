@@ -64,5 +64,7 @@ RUN mkdir -p build && \
     cmake -DCMAKE_BUILD_TYPE=Release .. && \
     make -j${NUM_JOBS}
 
+RUN mv /srv/tcp_server/build/bin/tcp_client /usr/sbin/tcp_client
+
 # Run project
 CMD ["/srv/tcp_server/build/bin/tcp_server"]

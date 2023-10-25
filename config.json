@@ -1,5 +1,5 @@
 {
-    "server_port": 8082,
+    "server_port": 8080,
     "file_name_prefix": "OUTPUT",
-    "max_file_size": 6
+    "max_file_size": 32
 }
