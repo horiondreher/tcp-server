@@ -21,12 +21,17 @@ done
 # Clear files if option is set
 if [ "$CLEAR" = true ] ; then
   rm -rf build/*
+  rm -rf output/*
 fi
 
 # Build if option is set
 if [ "$BUILD" = true ] ; then
   if [ ! -d "build" ]; then
     mkdir build
+  fi
+
+  if [ ! -d "output" ]; then
+    mkdir output
   fi
 
   cd build || exit 1

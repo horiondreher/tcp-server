@@ -25,7 +25,7 @@ static const std::string config_file = "config.json";
 class config {
 public:
     int port = 0;
-    int max_file_size = 0;
+    int max_file_size = 32;
     std::string file_name_prefix = "";
 
     static config& get_instance() {
@@ -118,7 +118,7 @@ public:
     void handle_read(const boost::system::error_code& err, size_t bytes_transferred) {
         if (!err) {
             std::istream input_stream(&buffer_);
-            std::ofstream output_file(file_name_, std::ios::app);
+            std::ofstream output_file("output/" + file_name_, std::ios::app);
 
             if(!output_file.is_open()) {
                 std::cerr << "Error opening file" << std::endl;

@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  tcp-server:
+    image: tcp-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    volumes:
+      - ./config.json:/srv/tcp_server/config.json
+      - ./output:/srv/tcp_server/output
