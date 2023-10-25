@@ -1,8 +1,15 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <ctime>
+#include <string>
+#include <iomanip>
+
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/regex.hpp>
 
 using namespace boost::asio;
 using ip::tcp;
@@ -11,7 +18,12 @@ class tcp_connection : public boost::enable_shared_from_this<tcp_connection> {
 private:
     tcp::socket socket_;
     deadline_timer timer_;
+
+    streambuf buffer_;
     std::string message_;
+    std::string file_name_;
+    std::string client_endpoint_;
+    size_t max_file_length_ = 32;
 
     enum { max_length = 1024 };
     char data_[max_length];
@@ -19,7 +31,7 @@ private:
 public:
     typedef boost::shared_ptr<tcp_connection> pointer;
 
-    tcp_connection(io_context& io_context) : socket_(io_context), timer_(io_context) {}
+    tcp_connection(io_context& io_context) : socket_(io_context), timer_(io_context) { }
     ~tcp_connection() {
         std::cout << "Destroyed tcp_connection session\n";
     }
@@ -34,25 +46,60 @@ public:
 
     void start() {
         std::cout << "Created tcp_connection session\n";
-        // async_read(
-        //     socket_,
-        //     buffer(data_, max_length),
-        //     boost::bind(&tcp_connection::handle_read,
-        //                 shared_from_this(),
-        //                 placeholders::error,
-        //                 placeholders::bytes_transferred));
 
-        // socket_.async_read_some(
-        //     boost::asio::buffer(data_, max_length),
-        //     boost::bind(&tcp_connection::handle_read,
-        //                 shared_from_this(),
-        //                 boost::asio::placeholders::error,
-        //                 boost::asio::placeholders::bytes_transferred));
+        // Maybe change to UTC time
+        std::time_t now = std::time(0);
+        std::tm* now_tm = std::localtime(&now);
+        std::stringstream ss;
+        ss << std::put_time(now_tm, "%Y%m%d%H%M%S");
+        std::string timestamp = ss.str();
+
+        client_endpoint_ = socket_.remote_endpoint().address().to_string() +
+            ":" + std::to_string(socket_.remote_endpoint().port());
+
+        file_name_ = "CONNECTION_" + client_endpoint_ + "_" + timestamp + ".txt";
+
+        async_read_until(
+            socket_,
+            buffer_,
+            boost::regex("\n\n"),
+            boost::bind(&tcp_connection::handle_read,
+                        shared_from_this(),
+                        placeholders::error,
+                        placeholders::bytes_transferred));
     }
 
     void handle_read(const boost::system::error_code& err, size_t bytes_transferred) {
         if (!err) {
-            std::cout << "Client says: " << data_ << std::endl;
+            std::istream input_stream(&buffer_);
+            std::ofstream output_file(file_name_, std::ios::app);
+
+            if(!output_file.is_open()) {
+                std::cerr << "Error opening file" << std::endl;
+                return;
+            }
+
+            std::cout << "Bytes received from " << client_endpoint_ << ": " << bytes_transferred << std::endl;
+            size_t file_length = 0;
+
+            while(input_stream) {
+                input_stream.read(data_, max_length);
+                std::streamsize read = input_stream.gcount();
+
+                if(file_length + read > max_file_length_) {
+                    read = max_file_length_ - file_length;
+                }
+
+                output_file.write(data_, read);
+                file_length += read;
+
+                if(file_length >= max_file_length_) {
+                    break;
+                }
+            }
+
+            std::cout << "Message received from client, closing file" << std::endl;
+            output_file.close();
         } else {
             std::cerr << "error: " << err.message() << std::endl;
         }
